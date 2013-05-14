@@ -1,0 +1,202 @@
+<html manifest="cache.manifest">
+	<head>
+		<script src="jquery-2.0.0.min.js"></script>
+		<style>
+		.cell {
+			border-color: black;
+			border-width: 1px;
+			border-style: solid;
+			float:left;
+		}
+		
+		#board {
+			border-color: black;
+			border-width: 1px;
+			border-style: solid;
+		}
+		</style>
+	</head>
+	<body>
+		<script>
+			var Cell = function(width, height) {
+				var me = this,
+					cellHtml = '<div class="cell"></div>';
+				
+				me.id = 0;
+				me.$ = $(cellHtml);
+				me.$.css('width', width);
+				me.$.css('height', height);
+				
+				me.toJSON = function() {
+					return {
+						id : me.id,
+						bgcolor : me.$.css("background-color")
+					}
+				};
+				
+			};
+			
+			var Icon = function(width, height, color, text) {
+				var me = this,
+					iconHtml = '<div class="cell"></div>';
+				
+				me.id = 0;
+				me.$ = $(iconHtml);
+				me.$.css('width', width);
+				me.$.css('height', height);
+				me.$.css('background-color', color);
+				me.$.html(text);
+				
+				me.toJSON = function() {
+					return {
+						id : me.id,
+						bgcolor : me.$.css("background-color"), 
+						text : me.$.html()//, 
+						//cellId : x.parent().data('id')
+					}
+				};
+				
+			};
+			
+			var Board = function($board) {
+				var me = this,
+					cellHtml = '<div class="cell"></div>',
+					cells = [],
+					icons = [],
+					numberOfCell = 50,
+					cellSize = 20,
+					borderWidth = 1,
+					mode = false,
+					currentColor = 'blue',
+					currenIcon,
+					iconId = 0;
+				
+				$board.css('width', (cellSize+borderWidth*2)*numberOfCell);
+				$board.css('height', (cellSize+borderWidth*2)*numberOfCell);
+				
+				function createBoard() {
+					var i,
+						totalCells = numberOfCell*numberOfCell,
+						cell;
+					for (i = 0; i < totalCells; i++) {
+						cell = new Cell(cellSize, cellSize);
+						cell.$.on('click', function() {
+							if (mode) {
+								$(this).css('background-color', currentColor);
+							} else {
+								if (currenIcon == undefined) return;
+								$(this).append(currenIcon);
+							}
+						});
+						cell.id = i;
+						cells.push(cell);
+						$board.append(cell.$);
+					}
+				}
+				createBoard();
+				
+				me.switchMode = function() {
+					mode = !mode;
+					if (mode) {
+						$board.css('border-color', 'red');
+					} else {
+						$board.css('border-color', '');
+					}
+				};
+				
+				me.setCurrentColor = function(color) {
+					currentColor = color;
+				};
+				
+				me.createIcon = function(text, color) {
+					var icon = new Icon(cellSize, cellSize, color, text);
+					iconId++;
+					icon.id = iconId;
+					icon.$.on('click', function() {
+						var $this = $(this);
+						if (currenIcon != undefined && currenIcon.data('id') === $this.data('id')) {
+							$this.css('border-color', 'black');
+							currenIcon = undefined;
+						} else {
+							currenIcon = $this;
+							$this.css('border-color', 'green');
+						}
+					});
+					icons.push(icon);
+					return icon.$;
+				};
+				
+				me.deleteCurrentIcon = function() {
+					if (currenIcon == undefined) return;
+					currenIcon.remove();
+				};
+				
+				me.save = function(target) {
+					var b = {};
+					//b.cells = cells.map(function(x) { return {id : x.data('id'), bgcolor : x.css("background-color")}; });
+					//b.icons = icons.map(function(x) { return {id : x.data('id'), bgcolor : x.css("background-color"), text : x.html(), cellId : x.parent().data('id') }; });
+					b.cells = cells;
+					b.icons = icons;
+					return JSON.stringify(b);
+				};
+				
+			};
+				
+			$(function() {
+				
+				var b = new Board($('#board'));
+				
+				
+				$('#mode').on('click', function() {
+					b.switchMode()
+				});
+				
+				$('#color').on('keypress', function(key) {
+					if (key.keyCode != 13) return;
+					var $this = $(this),
+						color = $this.val();
+					$this.css('background-color', color);
+					b.setCurrentColor(color);
+				});
+				
+				$('#iconBtn').on('click', function() {
+					var icon = b.createIcon($('#iconText').val(), $('#iconColor').val());
+					$('#icon').append(icon);
+				});
+				
+				$('#deleteIcon').on('click', function() {
+					b.deleteCurrentIcon();
+				});
+				
+				$('#save').on('click', function() {
+					console.log(b.save());
+				});
+				
+				$('#rand').on('keypress', function(key) {
+					if (key.keyCode != 13) return;
+					$('#randtaget').html(Math.round(Math.random() * ($('#rand').val() - 1) + 1));
+				});
+				
+			});
+		</script>
+		<div id='board'>
+			
+		</div>
+		<button id='save'>Save</button>
+		<p>
+			<button id='mode'>Mode</button>
+			<input type='text' id='color'></input>
+		</p>
+		<p>
+			<input type='text' id='iconText'></input>
+			<input type='text' id='iconColor'></input>
+			<button id='iconBtn'>Create</button>
+			<span id='icon' class='cell'></span>
+			<button id='deleteIcon'>Delete</button>
+		</p>
+		<p>
+			<input type='text' id='rand'></input>
+			<span id='randtaget'></span>
+		</p>
+	</body>
+</html>
